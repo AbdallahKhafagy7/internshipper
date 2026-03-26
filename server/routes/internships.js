@@ -161,7 +161,7 @@ router.post("/", protect, upload.array("images", 5), async (req, res) => {
 
     const internship = await Internship.create(payload);
 
-    res.json(internships);
+    res.json(internship);
     } catch (error) {
     res.status(500).json({ message: error.message });
     }
