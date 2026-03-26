@@ -13,10 +13,15 @@ const Admin = () => {
     const [selectedId, setSelectedId] = useState(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-    const { data: internships, isLoading } = useQuery({
-        queryKey: ['admin-internships'],
-        queryFn: () => getInternships(),
+    const [internshipPage, setInternshipPage] = useState(1);
+
+    const { data: internshipsData, isLoading } = useQuery({
+        queryKey: ['admin-internships', internshipPage],
+        queryFn: () => getInternships({ page: internshipPage, limit: 10 }),
     });
+
+    const internships = internshipsData?.internships || [];
+    const totalInternshipPages = internshipsData?.pages || 1;
 
     const deleteMutation = useMutation({
         mutationFn: (id) => deleteInternship(id, token),
@@ -47,6 +52,10 @@ const Admin = () => {
 
     const confirmDelete = () => {
         deleteMutation.mutate(selectedId);
+    };
+
+    const handlePageChange = (newPage) => {
+        setInternshipPage(newPage);
     };
 
     if (isLoading || usersLoading) return (
@@ -189,6 +198,29 @@ const Admin = () => {
                     </tbody>
                 </table>
             </div>
+            
+            {/* Internship Pagination */}
+            {totalInternshipPages > 1 && (
+                <div className="flex justify-center items-center gap-2 pt-4">
+                    <button
+                        onClick={() => handlePageChange(internshipPage - 1)}
+                        disabled={internshipPage === 1}
+                        className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    >
+                        Previous
+                    </button>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {internshipPage} of {totalInternshipPages}
+                    </span>
+                    <button
+                        onClick={() => handlePageChange(internshipPage + 1)}
+                        disabled={internshipPage === totalInternshipPages}
+                        className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
             </section>
 
             <Modal 

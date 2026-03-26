@@ -13,7 +13,10 @@ function asTrimmed(v) {
 const { upload, cloudinary } = require("../config/cloudinary");
 
 router.get("/", async (req, res) => {
-  const { search, industry, target, sort } = req.query;
+  const { search, industry, target, sort, page = 1, limit = 10 } = req.query;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const pageSize = parseInt(limit);
+
   let query = {};
 
   if (search) {
@@ -37,6 +40,7 @@ router.get("/", async (req, res) => {
   try {
     const now = new Date();
     let internships;
+    let total;
 
     if (sort === "deadline_ended") {
       const deadlineFilter = {
@@ -45,9 +49,12 @@ router.get("/", async (req, res) => {
         $lt: now,
       };
       const listQuery = { ...query, deadline: deadlineFilter };
+      total = await Internship.countDocuments(listQuery);
       internships = await Internship.find(listQuery)
         .populate("postedBy", "username")
-        .sort({ deadline: -1 });
+        .sort({ deadline: -1 })
+        .skip(skip)
+        .limit(pageSize);
     } else if (sort === "deadline_soon") {
       const farFuture = new Date("9999-12-31T23:59:59.999Z");
       const pipeline = [
@@ -71,14 +78,29 @@ router.get("/", async (req, res) => {
         { $addFields: { postedBy: "$_pb" } },
         { $project: { _pb: 0, _sortDeadline: 0 } },
       ];
-      internships = await Internship.aggregate(pipeline);
+
+      // For aggregation, we need a separate count or use facet
+      const countPipeline = [...pipeline, { $count: "total" }];
+      const countResult = await Internship.aggregate(countPipeline);
+      total = countResult.length > 0 ? countResult[0].total : 0;
+
+      const paginatedPipeline = [...pipeline, { $skip: skip }, { $limit: pageSize }];
+      internships = await Internship.aggregate(paginatedPipeline);
     } else {
+      total = await Internship.countDocuments(query);
       internships = await Internship.find(query)
         .populate("postedBy", "username")
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
     }
 
-    res.json(internships);
+    res.json({
+      internships,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / pageSize),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

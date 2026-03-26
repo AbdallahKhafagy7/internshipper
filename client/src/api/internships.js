@@ -4,12 +4,14 @@ import api_url from "./config";
 const API_URL = `${api_url}/internships`;
 
 export const getInternships = async (filters = {}) => {
-  const { search, industry, target, sort } = filters;
+  const { search, industry, target, sort, page, limit } = filters;
   const params = new URLSearchParams();
   if (search) params.set("search", search);
   if (industry) params.set("industry", industry);
   if (target) params.set("target", target);
   if (sort) params.set("sort", sort);
+  if (page) params.set("page", page);
+  if (limit) params.set("limit", limit);
   const qs = params.toString();
 
   const response = await axios.get(qs ? `${API_URL}?${qs}` : API_URL);

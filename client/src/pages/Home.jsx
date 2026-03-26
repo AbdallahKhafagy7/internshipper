@@ -18,13 +18,17 @@ const Home = () => {
     industry: "All",
     target: "all",
     sort: "recent",
+    page: 1,
   };
   const [filters, setFilters] = useState(initialFilters);
 
-  const { data: internships, isLoading: internshipsLoading } = useQuery({
+  const { data, isLoading: internshipsLoading } = useQuery({
     queryKey: ["internships", filters],
     queryFn: () => getInternships(filters),
   });
+
+  const internships = data?.internships || [];
+  const totalPages = data?.pages || 1;
 
   const { data: applications, isLoading: applicationsLoading } = useQuery({
     queryKey: ["my-applications"],
@@ -48,16 +52,21 @@ const Home = () => {
   });
 
   const handleSearchClick = () => {
-    setFilters((prev) => ({ ...prev, search }));
+    setFilters((prev) => ({ ...prev, search, page: 1 }));
   };
 
   const handleFilterChange = (e) => {
-    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value, page: 1 }));
   };
 
   const handleClearAll = () => {
     setFilters(initialFilters);
     setSearch("");
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters((prev) => ({ ...prev, page: newPage }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const filteredInternships = internships?.filter((internship) => {
@@ -115,19 +124,57 @@ const Home = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 w-full">
-            {filteredInternships?.map((internship) => (
-              <InternshipCard
-                key={internship._id}
-                internship={internship}
-                isApplied={appliedInternshipIds.has(String(internship._id))}
-                onDelete={(id) => deleteMutation.mutate(id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3 w-full">
+              {filteredInternships?.map((internship) => (
+                <InternshipCard
+                  key={internship._id}
+                  internship={internship}
+                  isApplied={appliedInternshipIds.has(String(internship._id))}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 pt-6">
+                <button
+                  onClick={() => handlePageChange(filters.page - 1)}
+                  disabled={filters.page === 1}
+                  className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
+                >
+                  Previous
+                </button>
+                <div className="flex gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => handlePageChange(i + 1)}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                        filters.page === i + 1
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                          : "hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handlePageChange(filters.page + 1)}
+                  disabled={filters.page === totalPages}
+                  className="px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-slate-300"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
+
   );
 };
 
