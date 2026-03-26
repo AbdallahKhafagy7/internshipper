@@ -9,6 +9,7 @@ import PostInternship from './pages/PostInternship';
 import Tracking from './pages/Tracking';
 import Admin from './pages/Admin';
 import InternshipDetails from './pages/InternshipDetails';
+import Footer from './components/Footer';
 
 // Protected Route Component
 const PrivateRoute = ({ children, adminOnly = false }) => {
@@ -27,9 +28,9 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
 
 function App() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
+      <main className="flex-grow container mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -53,7 +54,8 @@ function App() {
             </PrivateRoute>
           } />
         </Routes>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }
